@@ -1,6 +1,4 @@
-Postgres exporter
+Iptables exporter
 =================
 
-postgres-exporter is a `Postgresql <http://www.postgresql.org/>`_ statistics collector for
-<https://packaging.python.org>`_'s `Prometheus <http://prometheus.io/>`_
-monitoring system.
+iptables-exporter collects traffic data from iptables rules.
