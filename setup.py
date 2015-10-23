@@ -33,7 +33,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
     ],
-    keywords='prometheus monitoring iptablesql',
+    keywords='prometheus monitoring iptables bandwidth',
 
     packages=find_packages(),
     scripts=['iptables-exporter'],
