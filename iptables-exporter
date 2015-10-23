@@ -1,6 +1,6 @@
 #!/usr//bin/env python
 
-from iptables_exporter import main
+from iptables_exporter.main import main
 
 
 main()
