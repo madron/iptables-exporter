@@ -22,29 +22,34 @@ IPTABLES_BYTES = Counter(
     ['table', 'chain', 'rule'],
 )
 TABLES = dict(
-    filter=iptc.Table(iptc.Table.FILTER),
-    nat=iptc.Table(iptc.Table.NAT),
-    mangle=iptc.Table(iptc.Table.MANGLE),
-    raw=iptc.Table(iptc.Table.RAW),
+    filter=iptc.Table.FILTER,
+    nat=iptc.Table.NAT,
+    mangle=iptc.Table.MANGLE,
+    raw=iptc.Table.RAW,
 )
+TABLE_CHOICES = TABLES.keys()
+DEFAULT_TABLE_CHOICES = ['filter']
 RE = re.compile('^iptables-exporter (?P<name>.*)$')
 
 
 class MetricsHandler(BaseHTTPRequestHandler):
+    tables = DEFAULT_TABLE_CHOICES
+
     def do_GET(self):
         self.send_response(200)
         self.send_header('Content-Type', CONTENT_TYPE_LATEST)
         self.end_headers()
-        collect_metrics()
+        collect_metrics(self.tables)
         self.wfile.write(generate_latest(core.REGISTRY))
 
     def log_message(self, format, *args):
         return
 
 
-def collect_metrics():
+def collect_metrics(tables):
     data = dict()
-    for name, table in TABLES.iteritems():
+    for name in tables:
+        table = iptc.Table(TABLES[name])
         table.refresh()
         labels = dict(table=name)
         for chain in table.chains:
@@ -76,8 +81,8 @@ def get_exporter_name(rule):
     return name
 
 
-def dump_data():
-    collect_metrics()
+def dump_data(tables):
+    collect_metrics(tables)
     print(generate_latest(core.REGISTRY))
 
 
@@ -95,6 +100,11 @@ def main():
         help='Listening port, default: 9119'
     )
     parser.add_argument(
+        '--tables', metavar='TABLE', type=str, nargs='+',
+        choices=TABLE_CHOICES, default=DEFAULT_TABLE_CHOICES,
+        help='List of tables, default: %s' % ', '.join(DEFAULT_TABLE_CHOICES)
+    )
+    parser.add_argument(
         '--dump-data', action='store_true', default=False,
         help='Prints collected data and exits'
     )
@@ -102,9 +112,10 @@ def main():
 
     # Test mode
     if args.dump_data:
-        dump_data()
+        dump_data(args.tables)
         exit(0)
 
     # Start http server
     httpd = HTTPServer((args.address, args.port), MetricsHandler)
+    httpd.RequestHandlerClass.tables = args.tables
     httpd.serve_forever()
