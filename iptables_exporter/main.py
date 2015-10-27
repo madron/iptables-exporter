@@ -45,6 +45,7 @@ class MetricsHandler(BaseHTTPRequestHandler):
 def collect_metrics():
     data = dict()
     for name, table in TABLES.iteritems():
+        table.refresh()
         labels = dict(table=name)
         for chain in table.chains:
             labels['chain'] = chain.name.lower()
