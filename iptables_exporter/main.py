@@ -7,7 +7,7 @@ import iptc
 from prometheus_client import core
 from prometheus_client import CONTENT_TYPE_LATEST
 from prometheus_client import generate_latest
-from prometheus_client import Counter
+from prometheus_client import Counter, Gauge
 from prometheus_client.exposition import BaseHTTPRequestHandler, HTTPServer
 
 
@@ -20,6 +20,11 @@ IPTABLES_BYTES = Counter(
     'iptables_bytes',
     'Number of matched bytes',
     ['table', 'chain', 'rule'],
+)
+IPTABLES_RULES = Gauge(
+    'iptables_rules',
+    'Number of rules',
+    ['table', 'chain'],
 )
 TABLES = dict(
     filter=iptc.Table.FILTER,
@@ -54,7 +59,9 @@ def collect_metrics(tables):
         labels = dict(table=name)
         for chain in table.chains:
             labels['chain'] = chain.name.lower()
+            rule_count = 0
             for rule in chain.rules:
+                rule_count += 1
                 exporter_name = get_exporter_name(rule)
                 if exporter_name:
                     labels['rule'] = exporter_name
@@ -64,6 +71,7 @@ def collect_metrics(tables):
                     packets, bytes = rule.get_counters()
                     data[key]['packets'] += packets
                     data[key]['bytes'] += bytes
+            IPTABLES_RULES.labels(labels).set(rule_count)
     for value in data.itervalues():
         labels = value['labels']
         IPTABLES_PACKETS.labels(labels)._value._value = value['packets']
