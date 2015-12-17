@@ -71,7 +71,8 @@ def collect_metrics(tables):
                     packets, bytes = rule.get_counters()
                     data[key]['packets'] += packets
                     data[key]['bytes'] += bytes
-            IPTABLES_RULES.labels(labels).set(rule_count)
+            rules_labels = dict(table=labels['table'], chain=labels['chain'])
+            IPTABLES_RULES.labels(rules_labels).set(rule_count)
     for value in data.itervalues():
         labels = value['labels']
         IPTABLES_PACKETS.labels(labels)._value._value = value['packets']
