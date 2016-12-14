@@ -12,7 +12,7 @@ with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name="iptables-exporter",
-    version="0.3.1",
+    version="0.3.2",
     description='Prometheus iptables exporter',
     long_description=long_description,
 

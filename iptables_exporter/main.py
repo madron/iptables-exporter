@@ -72,11 +72,18 @@ def collect_metrics(tables):
                     data[key]['packets'] += packets
                     data[key]['bytes'] += bytes
             rules_labels = dict(table=labels['table'], chain=labels['chain'])
-            IPTABLES_RULES.labels(rules_labels).set(rule_count)
+            try:
+                IPTABLES_RULES.labels(**rules_labels).set(rule_count)
+            except TypeError:
+                IPTABLES_RULES.labels(rules_labels).set(rule_count)
     for value in data.itervalues():
         labels = value['labels']
-        IPTABLES_PACKETS.labels(labels)._value._value = value['packets']
-        IPTABLES_BYTES.labels(labels)._value._value = value['bytes']
+        try:
+            IPTABLES_PACKETS.labels(**labels)._value._value = value['packets']
+            IPTABLES_BYTES.labels(**labels)._value._value = value['bytes']
+        except TypeError:
+            IPTABLES_PACKETS.labels(labels)._value._value = value['packets']
+            IPTABLES_BYTES.labels(labels)._value._value = value['bytes']
 
 
 def get_exporter_name(rule):
