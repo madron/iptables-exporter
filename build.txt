@@ -1,0 +1,13 @@
+# Virtualenv
+
+mkvirtualenv iptables-exporter
+pip install wheel
+
+
+# Change version in setup.py
+
+
+# Build and upload
+
+rm -rf build dist iptables_exporter.egg-info
+python setup.py sdist bdist_wheel upload
