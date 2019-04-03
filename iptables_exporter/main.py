@@ -76,7 +76,7 @@ def collect_metrics(tables):
                 IPTABLES_RULES.labels(**rules_labels).set(rule_count)
             except TypeError:
                 IPTABLES_RULES.labels(rules_labels).set(rule_count)
-    for value in data.itervalues():
+    for value in data.values():
         labels = value['labels']
         try:
             IPTABLES_PACKETS.labels(**labels)._value._value = value['packets']
@@ -99,7 +99,7 @@ def get_exporter_name(rule):
 
 def dump_data(tables):
     collect_metrics(tables)
-    print(generate_latest(core.REGISTRY))
+    print(generate_latest(core.REGISTRY).decode('utf8'))
 
 
 def main():
