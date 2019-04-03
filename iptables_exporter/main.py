@@ -50,9 +50,6 @@ class MetricsHandler(BaseHTTPRequestHandler):
         collect_metrics(self.ip_versions, self.tables)
         self.wfile.write(generate_latest(core.REGISTRY))
 
-    def log_message(self, format, *args):
-        return
-
 
 def collect_metrics(ip_versions, tables):
     data = dict()
