@@ -1,2 +1,2 @@
 prometheus-client
-python-iptables
+python-iptables>=0.13
