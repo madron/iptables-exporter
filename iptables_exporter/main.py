@@ -31,6 +31,7 @@ TABLES = dict(
     nat=iptc.Table.NAT,
     mangle=iptc.Table.MANGLE,
     raw=iptc.Table.RAW,
+    security=iptc.Table.SECURITY,
 )
 TABLE_CHOICES = TABLES.keys()
 DEFAULT_TABLE_CHOICES = ['filter']
