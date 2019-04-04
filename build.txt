@@ -1,7 +1,7 @@
 # Virtualenv
 
 mkvirtualenv iptables-exporter
-pip install wheel
+pip install wheel twine
 
 
 # Change version in setup.py
@@ -10,4 +10,5 @@ pip install wheel
 # Build and upload
 
 rm -rf build dist iptables_exporter.egg-info
-python setup.py sdist bdist_wheel upload
+python setup.py sdist bdist_wheel
+twine upload dist/*
