@@ -15,6 +15,7 @@ setup(
     version="0.9.0",
     description='Prometheus iptables exporter',
     long_description=long_description,
+    long_description_content_type='text/markdown',
 
     url='https://github.com/madron/iptables-exporter',
     author='Massimiliano Ravelli',
