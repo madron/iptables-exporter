@@ -28,7 +28,7 @@ Point your browser to http://localhost:9119/metrics
 
 ## Configure iptables
 
-Otionally you can monitor specific rules by adding a comment starting with `iptables-exporter` to your rule:
+Optionally you can monitor specific rules by adding a comment starting with `iptables-exporter`:
 
     iptables -A INPUT --dport ssh -j ACCEPT -m comment --comment "iptables-exporter ssh traffic"
 
@@ -43,4 +43,4 @@ More rules with same name:
     iptables -A INPUT -s 172.16.0.0/12  --dport ssh -j ACCEPT -m comment --comment "iptables-exporter ssh traffic"
     iptables -A INPUT -s 192.168.0.0/16 --dport ssh -j ACCEPT -m comment --comment "iptables-exporter ssh traffic"
 
-exports only the total of the 3 rules as they have same table, chain and name.
+exports total packets and bytes for the 3 rules as they have same ip_version, table, chain and name.
