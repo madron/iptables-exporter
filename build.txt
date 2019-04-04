@@ -1,7 +1,7 @@
 # Virtualenv
 
 mkvirtualenv iptables-exporter
-pip install wheel twine
+pip install --upgrade setuptools wheel twine
 
 
 # Change version in setup.py
