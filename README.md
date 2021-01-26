@@ -44,3 +44,9 @@ More rules with same name:
     iptables -A INPUT -s 192.168.0.0/16 --dport ssh -j ACCEPT -m comment --comment "iptables-exporter ssh traffic"
 
 exports total packets and bytes for the 3 rules as they have same ip_version, table, chain and name.
+
+
+## Used in production by:
+
+- [OpenAI](https://openai.com/blog/scaling-kubernetes-to-7500-nodes/)
+- [MasterTraining](https://www.mastertraining.it/)
