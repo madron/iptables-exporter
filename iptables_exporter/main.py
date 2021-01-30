@@ -4,28 +4,12 @@ import argparse
 import copy
 import re
 import iptc
-from prometheus_client import core
-from prometheus_client import CONTENT_TYPE_LATEST
 from prometheus_client import generate_latest
-from prometheus_client import Counter, Gauge
-from prometheus_client.exposition import BaseHTTPRequestHandler, HTTPServer
+from prometheus_client import make_wsgi_app
+from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily, REGISTRY
+from wsgiref.simple_server import make_server
 
 
-IPTABLES_PACKETS = Counter(
-    'iptables_packets',
-    'Number of matched packets',
-    ['ip_version', 'table', 'chain', 'rule'],
-)
-IPTABLES_BYTES = Counter(
-    'iptables_bytes',
-    'Number of matched bytes',
-    ['ip_version', 'table', 'chain', 'rule'],
-)
-IPTABLES_RULES = Gauge(
-    'iptables_rules',
-    'Number of rules',
-    ['ip_version', 'table', 'chain'],
-)
 TABLES = dict(
     filter=iptc.Table.FILTER,
     nat=iptc.Table.NAT,
@@ -39,49 +23,54 @@ DEFAULT_TABLE_CHOICES = ['filter']
 RE = re.compile('^iptables-exporter (?P<name>.*)$')
 
 
-class MetricsHandler(BaseHTTPRequestHandler):
-    ip_versions = IP_VERSION_CHOICES
-    tables = DEFAULT_TABLE_CHOICES
+class IptablesCollector(object):
+    def __init__(self, ip_versions=IP_VERSION_CHOICES, tables=DEFAULT_TABLE_CHOICES):
+        self.ip_versions = ip_versions
+        self.tables = tables
 
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-Type', CONTENT_TYPE_LATEST)
-        self.end_headers()
-        collect_metrics(self.ip_versions, self.tables)
-        self.wfile.write(generate_latest(core.REGISTRY))
-
-
-def collect_metrics(ip_versions, tables):
-    data = dict()
-    for ip_version in ip_versions:
-        labels = dict(ip_version=ip_version)
-        for name in tables:
-            if ip_version == '4':
-                table = iptc.Table(TABLES[name])
-            else:
-                table = iptc.Table6(TABLES[name])
-            table.refresh()
-            labels['table'] = name
-            for chain in table.chains:
-                labels['chain'] = chain.name.lower()
-                rule_count = 0
-                for rule in chain.rules:
-                    rule_count += 1
-                    exporter_name = get_exporter_name(rule)
-                    if exporter_name:
-                        labels['rule'] = exporter_name
-                        key = (labels['table'], labels['chain'], labels['rule'])
-                        if not key in data:
-                            data[key] = dict(labels=copy.copy(labels), packets=0, bytes=0)
-                        packets, bytes = rule.get_counters()
-                        data[key]['packets'] += packets
-                        data[key]['bytes'] += bytes
-                rules_labels = dict(ip_version=labels['ip_version'], table=labels['table'], chain=labels['chain'])
-                IPTABLES_RULES.labels(**rules_labels).set(rule_count)
-    for value in data.values():
-        labels = value['labels']
-        IPTABLES_PACKETS.labels(**labels)._value._value = value['packets']
-        IPTABLES_BYTES.labels(**labels)._value._value = value['bytes']
+    def collect(self):
+        # Metrics
+        iptables_rules = GaugeMetricFamily(
+            'iptables_rules',
+            'Number of rules',
+            labels=['ip_version', 'table', 'chain'],
+        )
+        iptables_packets = CounterMetricFamily(
+            'iptables_packets',
+            'Number of matched packets',
+            labels=['ip_version', 'table', 'chain', 'rule'],
+        )
+        iptables_bytes = CounterMetricFamily(
+            'iptables_bytes',
+            'Number of matched bytes',
+            labels=['ip_version', 'table', 'chain', 'rule'],
+        )
+        for ip_version in self.ip_versions:
+            labels = dict(ip_version=ip_version)
+            for table_name in self.tables:
+                if ip_version == '4':
+                    table = iptc.Table(TABLES[table_name])
+                else:
+                    table = iptc.Table6(TABLES[table_name])
+                table.refresh()
+                labels['table'] = table_name
+                for chain in table.chains:
+                    labels['chain'] = chain.name.lower()
+                    rule_count = 0
+                    for rule in chain.rules:
+                        rule_count += 1
+                        exporter_name = get_exporter_name(rule)
+                        if exporter_name:
+                            labels['rule'] = exporter_name
+                            counter_labels = [labels['ip_version'], labels['table'], labels['chain'], labels['rule']]
+                            packets, bytes = rule.get_counters()
+                            iptables_packets.add_metric(counter_labels, packets)
+                            iptables_bytes.add_metric(counter_labels, bytes)
+                    rules_labels = [labels['ip_version'], labels['table'], labels['chain']]
+                    iptables_rules.add_metric(rules_labels, rule_count)
+        yield iptables_rules
+        yield iptables_packets
+        yield iptables_bytes
 
 
 def get_exporter_name(rule):
@@ -93,11 +82,6 @@ def get_exporter_name(rule):
             if match:
                 return match.groupdict()['name']
     return name
-
-
-def dump_data(ip_versions, tables):
-    collect_metrics(ip_versions, tables)
-    print(generate_latest(core.REGISTRY).decode('utf8'))
 
 
 def main():
@@ -129,13 +113,14 @@ def main():
     )
     args = parser.parse_args()
 
+    REGISTRY.register(IptablesCollector(ip_versions=args.ip_versions, tables=args.tables))
+
     # Test mode
     if args.dump_data:
-        dump_data(args.ip_versions, args.tables)
+        print(generate_latest(REGISTRY).decode('utf8'))
         exit(0)
 
     # Start http server
-    httpd = HTTPServer((args.address, args.port), MetricsHandler)
-    httpd.RequestHandlerClass.ip_versions = args.ip_versions
-    httpd.RequestHandlerClass.tables = args.tables
+    app = make_wsgi_app()
+    httpd = make_server(args.address, args.port, app)
     httpd.serve_forever()
