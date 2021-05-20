@@ -1,4 +1,4 @@
-FROM ubuntu:cosmic
+FROM ubuntu:focal
 
 
 # Requirements
@@ -11,7 +11,7 @@ CMD ["iptables-exporter"]
 
 # Source
 COPY iptables-exporter /usr/local/bin/iptables-exporter
-COPY iptables_exporter /usr/local/lib/python3.6/dist-packages/iptables_exporter
+COPY iptables_exporter /usr/local/lib/python3.8/dist-packages/iptables_exporter
 
 RUN    chmod 0755 /usr/local/bin/iptables-exporter \
-    && python3 -m compileall /usr/local/lib/python3.6/dist-packages/iptables_exporter
+    && python3 -m compileall /usr/local/lib/python3.8/dist-packages/iptables_exporter
