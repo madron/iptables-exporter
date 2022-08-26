@@ -20,7 +20,7 @@ TABLES = dict(
 IP_VERSION_CHOICES = ['4', '6']
 TABLE_CHOICES = TABLES.keys()
 DEFAULT_TABLE_CHOICES = ['filter']
-RE = re.compile('^iptables-exporter (?P<name>.*)$')
+RE = re.compile('(.*)?iptables-exporter (?P<name>.*)$')
 
 
 class IptablesCollector(object):
